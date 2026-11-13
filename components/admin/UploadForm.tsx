@@ -71,7 +71,7 @@ export default function UploadForm({ onSuccess }: UploadFormProps) {
         category,
         image_url: imageUrl,
         storage_path: filePath,
-      });
+      } as any);
 
       if (dbError) throw dbError;
 

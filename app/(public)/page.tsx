@@ -1,48 +1,37 @@
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
-import ImageGrid from '@/components/gallery/ImageGrid';
-import GallerySkeleton from '@/components/gallery/GallerySkeleton';
+import SpatialGalleryClient from '@/components/gallery/SpatialGalleryClient';
 import { Photo } from '@/types/photo';
 
-interface PageProps {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+async function SpatialGalleryData() {
+  try {
+    const supabase = await createClient();
+    const { data: photos, error } = await supabase
+      .from('photos')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !photos || photos.length === 0) {
+      return <SpatialGalleryClient initialPhotos={[]} />;
+    }
+
+    return <SpatialGalleryClient initialPhotos={photos as Photo[]} />;
+  } catch {
+    // If Supabase is unconfigured, seamlessly serve the curated museum-grade exhibition
+    return <SpatialGalleryClient initialPhotos={[]} />;
+  }
 }
 
-async function GalleryLoader({ category }: { category?: string }) {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from('photos')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (category && category !== 'all') {
-    query = query.eq('category', category);
-  }
-
-  const { data: photos, error } = await query;
-
-  if (error) {
-    console.error('Failed to load photos:', error);
-    return (
-      <div className="py-20 text-center text-neutral-400">
-        Failed to load photographs. Please verify your Supabase configuration.
-      </div>
-    );
-  }
-
-  return <ImageGrid photos={(photos as Photo[]) || []} />;
-}
-
-export default async function GalleryPage({ searchParams }: PageProps) {
-  const params = await searchParams;
-  const category = typeof params.category === 'string' ? params.category : undefined;
-
+export default function GalleryPage() {
   return (
-    <div className="py-6">
-      <Suspense key={category || 'all'} fallback={<GallerySkeleton />}>
-        <GalleryLoader category={category} />
-      </Suspense>
-    </div>
+    <Suspense
+      fallback={
+        <div className="fixed inset-0 bg-[#0A0A0B] flex items-center justify-center text-white/50 text-xs tracking-[0.3em] uppercase">
+          Initializing Spatial Canvas...
+        </div>
+      }
+    >
+      <SpatialGalleryData />
+    </Suspense>
   );
 }

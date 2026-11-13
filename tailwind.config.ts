@@ -11,6 +11,32 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        obsidian: "#0A0A0B",
+        alabaster: "#F4F3EF",
+        mutedStone: "#8A8A8E",
+      },
+      fontFamily: {
+        serif: [
+          '"Cormorant Garamond"',
+          'Baskerville',
+          'Georgia',
+          'Cambria',
+          '"Times New Roman"',
+          'serif',
+        ],
+        sans: [
+          '"Plus Jakarta Sans"',
+          'system-ui',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
+          'sans-serif',
+        ],
+      },
+      letterSpacing: {
+        widest: "0.2em",
+        ultra: "0.3em",
       },
     },
   },
