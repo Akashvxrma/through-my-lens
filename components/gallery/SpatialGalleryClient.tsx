@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Photo, PhotoCategory } from '@/types/photo';
-import { CURATED_PHOTOS } from '@/lib/data/curated-photos';
+import { USER_PHOTOS } from '@/lib/data/user-photos';
 import Loader from '@/components/canvas/Loader';
 import CustomCursor from '@/components/canvas/CustomCursor';
 import Header from '@/components/hud/Header';
@@ -31,9 +31,9 @@ export default function SpatialGalleryClient({
   const urlCategory = searchParams.get('category') as PhotoCategory | null;
   const currentCategory: PhotoCategory | 'all' = urlCategory || 'all';
 
-  // Use DB photos if available, otherwise seamlessly fall back to curated museum exhibition
+  // Use DB photos if available, otherwise seamlessly display authentic user photographs
   const allPhotos = useMemo(() => {
-    return initialPhotos.length > 0 ? initialPhotos : CURATED_PHOTOS;
+    return initialPhotos.length > 0 ? initialPhotos : USER_PHOTOS;
   }, [initialPhotos]);
 
   const [focusedPhoto, setFocusedPhoto] = useState<Photo | null>(null);

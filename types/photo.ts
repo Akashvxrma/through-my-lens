@@ -6,6 +6,7 @@ export interface Photo {
   alt_text: string;
   category: PhotoCategory;
   image_url: string;
+  thumbnail_url?: string | null;
   storage_path: string;
   width?: number | null;
   height?: number | null;

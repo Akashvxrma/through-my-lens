@@ -18,8 +18,14 @@ export function getOptimizedImageUrl(
 
   if (!originalUrl) return '';
 
-  // 1. Supabase Storage Image Transformation Pipeline
-  // Replaces /storage/v1/object/public/ with /storage/v1/render/image/public/
+  // 1. Local personal photographs in public/photos/
+  if (originalUrl.startsWith('/photos/') && !originalUrl.startsWith('/photos/thumbnails/')) {
+    const filename = originalUrl.replace('/photos/', '');
+    const baseName = filename.substring(0, filename.lastIndexOf('.'));
+    return `/photos/thumbnails/${baseName}.webp`;
+  }
+
+  // 2. Supabase Storage Image Transformation Pipeline
   if (originalUrl.includes('supabase.co/storage/v1/object/public/')) {
     const transformPath = originalUrl.replace(
       '/storage/v1/object/public/',
@@ -29,7 +35,7 @@ export function getOptimizedImageUrl(
     return `${transformPath}${separator}width=${width}&quality=${quality}&format=${format}`;
   }
 
-  // 2. Unsplash Image Optimization CDN (Curated Museum Fallback Photos)
+  // 3. Fallback remote CDN optimization
   if (originalUrl.includes('images.unsplash.com')) {
     try {
       const url = new URL(originalUrl);
@@ -43,6 +49,5 @@ export function getOptimizedImageUrl(
     }
   }
 
-  // 3. Generic image URLs
   return originalUrl;
 }

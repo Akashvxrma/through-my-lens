@@ -50,13 +50,13 @@ function PhotoPlaneComponent({
   const isCategoryMatch = category === 'all' || photo.category === category;
 
   // Dual-Resolution Texture Pipeline:
-  // Corridor uses 850px WebP; Focus Mode upgrades to raw high-res texture
+  // Corridor uses lightweight WebP; Focus Mode upgrades to raw high-res texture
   const activeImageUrl = useMemo(() => {
     if (isFocused) {
       return photo.image_url;
     }
-    return getOptimizedImageUrl(photo.image_url, { width: 850, quality: 78 });
-  }, [photo.image_url, isFocused]);
+    return photo.thumbnail_url || getOptimizedImageUrl(photo.image_url, { width: 850, quality: 78 });
+  }, [photo.image_url, photo.thumbnail_url, isFocused]);
 
   // Texture configuration & GPU memory cleanup on unmount
   useEffect(() => {

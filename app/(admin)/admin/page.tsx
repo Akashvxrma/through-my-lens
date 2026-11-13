@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import UploadForm from '@/components/admin/UploadForm';
 import PhotoManagementTable from '@/components/admin/PhotoManagementTable';
 import { Photo } from '@/types/photo';
+import { USER_PHOTOS } from '@/lib/data/user-photos';
 
 export const revalidate = 0;
 
@@ -16,6 +17,8 @@ export default async function AdminDashboardPage() {
   if (error) {
     console.error('Error fetching admin photos:', error);
   }
+
+  const activePhotos = photos && photos.length > 0 ? (photos as Photo[]) : USER_PHOTOS;
 
   return (
     <div className="space-y-10">
@@ -33,9 +36,9 @@ export default async function AdminDashboardPage() {
 
         <div className="lg:col-span-2">
           <h2 className="text-xl font-medium text-white mb-4">
-            Published Photos ({(photos || []).length})
+            Published Photos ({activePhotos.length})
           </h2>
-          <PhotoManagementTable initialPhotos={(photos as Photo[]) || []} />
+          <PhotoManagementTable initialPhotos={activePhotos} />
         </div>
       </div>
     </div>

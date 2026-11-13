@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import SpatialGalleryClient from '@/components/gallery/SpatialGalleryClient';
 import { Photo } from '@/types/photo';
+import { USER_PHOTOS } from '@/lib/data/user-photos';
 
 // Cache database results for 60 seconds (Next.js ISR)
 export const revalidate = 60;
@@ -15,13 +16,13 @@ async function SpatialGalleryData() {
       .order('created_at', { ascending: false });
 
     if (error || !photos || photos.length === 0) {
-      return <SpatialGalleryClient initialPhotos={[]} />;
+      return <SpatialGalleryClient initialPhotos={USER_PHOTOS} />;
     }
 
     return <SpatialGalleryClient initialPhotos={photos as Photo[]} />;
   } catch {
-    // If Supabase is unconfigured, serve the curated museum-grade exhibition
-    return <SpatialGalleryClient initialPhotos={[]} />;
+    // If Supabase is unconfigured, serve the authentic user photograph collection
+    return <SpatialGalleryClient initialPhotos={USER_PHOTOS} />;
   }
 }
 
