@@ -33,19 +33,31 @@ function PhotoPlaneComponent({
   const [hovered, setHovered] = useState(false);
   const { viewport, camera } = useThree();
 
-  // Aspect ratio calculation
+  // True visual aspect ratio calculation (width / height)
   const aspect = useMemo(() => {
     if (photo.width && photo.height) {
       return photo.width / photo.height;
     }
-    return 1.4;
+    return 1.0;
   }, [photo.width, photo.height]);
 
-  const baseWidth = useMemo(() => {
-    return viewport.width < 5 ? 2.2 : 3.0;
-  }, [viewport.width]);
+  const isPortrait = aspect < 1.0;
+  const isMobile = viewport.width < 5;
 
-  const baseHeight = baseWidth / aspect;
+  // Balanced visual geometry:
+  // Portrait and landscape artworks are proportioned harmoniously in the 3D corridor
+  // without clipping or stretching
+  const [planeWidth, planeHeight] = useMemo(() => {
+    if (isPortrait) {
+      const height = isMobile ? 2.6 : 3.2;
+      const width = height * aspect;
+      return [width, height];
+    } else {
+      const width = isMobile ? 2.4 : 3.0;
+      const height = width / aspect;
+      return [width, height];
+    }
+  }, [aspect, isPortrait, isMobile]);
 
   const isCategoryMatch = category === 'all' || photo.category === category;
 
@@ -58,7 +70,7 @@ function PhotoPlaneComponent({
     return photo.thumbnail_url || getOptimizedImageUrl(photo.image_url, { width: 850, quality: 78 });
   }, [photo.image_url, photo.thumbnail_url, isFocused]);
 
-  // Texture configuration & GPU memory cleanup on unmount
+  // Clean up GPU resources on unmount
   useEffect(() => {
     return () => {
       if (imageRef.current?.material) {
@@ -89,23 +101,33 @@ function PhotoPlaneComponent({
       const focusDistance = 3.6;
       targetPos.copy(camera.position).add(cameraDir.multiplyScalar(focusDistance));
 
-      const fitHeight = (viewport.height * 0.72) / baseHeight;
-      const fitWidth = (viewport.width * 0.75) / baseWidth;
-      targetScale = Math.min(fitHeight, fitWidth, 1.4);
+      // Calculate camera frustum dimensions at focus distance
+      const persCamera = camera as THREE.PerspectiveCamera;
+      const fovRad = ((persCamera.fov || 50) * Math.PI) / 360;
+      const frustumHeight = 2 * focusDistance * Math.tan(fovRad);
+      const frustumWidth = frustumHeight * (viewport.width / viewport.height);
+
+      // Fit inside 78% of viewport height & width with zero cropping
+      const maxAllowedWidth = frustumWidth * 0.78;
+      const maxAllowedHeight = frustumHeight * 0.78;
+
+      const scaleFitX = maxAllowedWidth / planeWidth;
+      const scaleFitY = maxAllowedHeight / planeHeight;
+      targetScale = Math.min(scaleFitX, scaleFitY);
       targetOpacity = 1;
+      targetRotX = 0;
+      targetRotY = 0;
+      targetRotZ = 0;
     } else if (isAnyFocused) {
-      // Another photo is in focus -> push back and fade
       targetPos.z -= 6;
       targetOpacity = 0.04;
       targetScale = 0.85;
     } else if (!isCategoryMatch) {
-      // Category filtered out -> fly back into fog
       targetPos.z -= 12;
       targetPos.y -= 1.5;
       targetOpacity = 0;
       targetScale = 0.6;
     } else {
-      // Normal corridor state
       if (hovered) {
         targetPos.z += 0.55;
         targetPos.y += 0.1;
@@ -117,8 +139,7 @@ function PhotoPlaneComponent({
       targetRotZ = basePosition[0] > 0 ? 0.015 : -0.015;
     }
 
-    // Performance Culling:
-    // Determine distance relative to camera Z
+    // Frustum and distance culling for 60+ FPS
     const distZ = group.position.z - camera.position.z;
     const isOutOfView =
       !isFocused &&
@@ -126,7 +147,7 @@ function PhotoPlaneComponent({
 
     if (isOutOfView) {
       if (group.visible) group.visible = false;
-      return; // Skip draw calls, matrix calculations, and damping for unseen planes!
+      return;
     } else {
       if (!group.visible) group.visible = true;
     }
@@ -147,7 +168,6 @@ function PhotoPlaneComponent({
         damp(imageRef.current.material, 'opacity', targetOpacity, 0.3, delta);
         imageRef.current.material.transparent = true;
         
-        // Ensure lightweight anisotropy for 60fps performance
         if (imageRef.current.material.map && !imageRef.current.material.map._configured) {
           imageRef.current.material.map.anisotropy = isFocused ? 2 : 1;
           imageRef.current.material.map.minFilter = THREE.LinearMipmapLinearFilter;
@@ -162,7 +182,6 @@ function PhotoPlaneComponent({
     e.stopPropagation();
     if (!isCategoryMatch || isAnyFocused) return;
     setHovered(true);
-    // Non-blocking custom event to decouple React state re-renders
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('photo-hover', { detail: true }));
     }
@@ -186,7 +205,7 @@ function PhotoPlaneComponent({
       <DreiImage
         ref={imageRef}
         url={activeImageUrl}
-        scale={[baseWidth, baseHeight]}
+        scale={[planeWidth, planeHeight]}
         radius={0.03}
         transparent
         onClick={handleClick}

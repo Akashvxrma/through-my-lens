@@ -1,5 +1,6 @@
 -- ==========================================================
--- Seed Real Photographs for "Through My Lens"
+-- Normalized Real Photographs for "Through My Lens"
+-- Automatically rotated to upright orientation with true pixel dimensions
 -- ==========================================================
 
 DELETE FROM public.photos WHERE id LIKE 'photo-%';
@@ -13,8 +14,8 @@ VALUES
   'everyday_moments',
   '/photos/20251230_185711.jpg',
   'photos/20251230_185711.jpg',
-  4000,
   2252,
+  4000,
   '2025-12-30T18:57:11Z',
   '2025-12-30T18:57:11Z'
 ),
@@ -61,8 +62,8 @@ VALUES
   'everyday_moments',
   '/photos/20260303_004707.jpg',
   'photos/20260303_004707.jpg',
-  4000,
   2252,
+  4000,
   '2026-03-03T00:47:07Z',
   '2026-03-03T00:47:07Z'
 ),
@@ -73,8 +74,8 @@ VALUES
   'places',
   '/photos/20260917_210522.jpg',
   'photos/20260917_210522.jpg',
-  8160,
   4592,
+  8160,
   '2026-09-17T21:05:22Z',
   '2026-09-17T21:05:22Z'
 ),
@@ -85,8 +86,8 @@ VALUES
   'places',
   '/photos/20261104_170820.jpg',
   'photos/20261104_170820.jpg',
-  4000,
   3000,
+  4000,
   '2026-11-04T17:08:20Z',
   '2026-11-04T17:08:20Z'
 ),
@@ -97,8 +98,8 @@ VALUES
   'everyday_moments',
   '/photos/20261110_161216.jpg',
   'photos/20261110_161216.jpg',
-  4000,
   3000,
+  4000,
   '2026-11-10T16:12:16Z',
   '2026-11-10T16:12:16Z'
 ),
