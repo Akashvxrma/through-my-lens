@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 
 interface CustomCursorProps {
-  isHoveringPhoto: boolean;
   isFocused: boolean;
 }
 
-export default function CustomCursor({ isHoveringPhoto, isFocused }: CustomCursorProps) {
+export default function CustomCursor({ isFocused }: CustomCursorProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const [isHoveringPhoto, setIsHoveringPhoto] = useState(false);
   const mouseX = useMotionValue(-100);
   const mouseY = useMotionValue(-100);
 
@@ -26,12 +26,20 @@ export default function CustomCursor({ isHoveringPhoto, isFocused }: CustomCurso
 
     const handleMouseLeave = () => setIsVisible(false);
 
-    window.addEventListener('mousemove', handleMouseMove);
+    // Decoupled custom event from 3D photo planes
+    const handlePhotoHover = (e: Event) => {
+      const customEvent = e as CustomEvent<boolean>;
+      setIsHoveringPhoto(customEvent.detail);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     document.addEventListener('mouseleave', handleMouseLeave);
+    window.addEventListener('photo-hover', handlePhotoHover);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseleave', handleMouseLeave);
+      window.removeEventListener('photo-hover', handlePhotoHover);
     };
   }, [mouseX, mouseY, isVisible]);
 

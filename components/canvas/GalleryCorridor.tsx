@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo, useCallback } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { damp3, damp } from 'maath/easing';
@@ -12,7 +12,6 @@ interface GalleryCorridorProps {
   category: PhotoCategory | 'all';
   focusedPhoto: Photo | null;
   onSelectPhoto: (photo: Photo | null) => void;
-  onHoverPhoto: (isHovered: boolean) => void;
 }
 
 export default function GalleryCorridor({
@@ -20,13 +19,13 @@ export default function GalleryCorridor({
   category,
   focusedPhoto,
   onSelectPhoto,
-  onHoverPhoto,
 }: GalleryCorridorProps) {
   const { camera, viewport } = useThree();
   const scrollRef = useRef(0);
   const targetScrollRef = useRef(0);
   const velocityRef = useRef(0);
-  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  // Ref for touch state to eliminate React re-renders during mobile swipe
+  const touchStartY = useRef<number | null>(null);
 
   // Filtered photos based on active category
   const activePhotos = useMemo(() => {
@@ -41,7 +40,6 @@ export default function GalleryCorridor({
     const xSpread = isMobile ? 1.0 : 2.1;
 
     return photos.map((_, i) => {
-      // Alternate left, right, center-left, center-right
       const pattern = i % 4;
       let x = 0;
       if (pattern === 0) x = -xSpread * 0.9;
@@ -65,7 +63,7 @@ export default function GalleryCorridor({
   // Mouse wheel listener with inertia
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      if (focusedPhoto) return; // Freeze scroll during focus mode
+      if (focusedPhoto) return;
       const delta = e.deltaY * 0.006;
       targetScrollRef.current = THREE.MathUtils.clamp(
         targetScrollRef.current + delta,
@@ -75,31 +73,37 @@ export default function GalleryCorridor({
     };
 
     const handleTouchStart = (e: TouchEvent) => {
-      setTouchStartY(e.touches[0].clientY);
+      touchStartY.current = e.touches[0].clientY;
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (focusedPhoto || touchStartY === null) return;
+      if (focusedPhoto || touchStartY.current === null) return;
       const currentY = e.touches[0].clientY;
-      const delta = (touchStartY - currentY) * 0.012;
+      const delta = (touchStartY.current - currentY) * 0.012;
       targetScrollRef.current = THREE.MathUtils.clamp(
         targetScrollRef.current + delta,
         0,
         maxScroll + 1.5
       );
-      setTouchStartY(currentY);
+      touchStartY.current = currentY;
+    };
+
+    const handleTouchEnd = () => {
+      touchStartY.current = null;
     };
 
     window.addEventListener('wheel', handleWheel, { passive: true });
     window.addEventListener('touchstart', handleTouchStart, { passive: true });
     window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     return () => {
       window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [focusedPhoto, maxScroll, touchStartY]);
+  }, [focusedPhoto, maxScroll]);
 
   // Keyboard navigation when focused
   useEffect(() => {
@@ -113,7 +117,7 @@ export default function GalleryCorridor({
         if (currentIndex < activePhotos.length - 1) {
           onSelectPhoto(activePhotos[currentIndex + 1]);
         } else {
-          onSelectPhoto(activePhotos[0]); // Loop back
+          onSelectPhoto(activePhotos[0]);
         }
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         if (currentIndex > 0) {
@@ -145,7 +149,7 @@ export default function GalleryCorridor({
     damp(scrollRef, 'current', targetScrollRef.current, 0.22, delta);
     velocityRef.current = (scrollRef.current - prevScroll) / Math.max(delta, 0.001);
 
-    // Mouse parallax rig
+    // Mouse parallax rig (zero React re-renders)
     const parallaxX = state.pointer.x * (viewport.width < 5 ? 0.15 : 0.35);
     const parallaxY = state.pointer.y * 0.2;
 
@@ -159,6 +163,13 @@ export default function GalleryCorridor({
     camera.lookAt(parallaxX * 0.5, parallaxY * 0.5, -scrollRef.current - 2.5);
   });
 
+  const handleSelect = useCallback(
+    (selected: Photo) => {
+      onSelectPhoto(selected);
+    },
+    [onSelectPhoto]
+  );
+
   return (
     <group onPointerMissed={() => onSelectPhoto(null)}>
       {photos.map((photo, i) => (
@@ -170,8 +181,7 @@ export default function GalleryCorridor({
           category={category}
           isFocused={focusedPhoto?.id === photo.id}
           isAnyFocused={!!focusedPhoto}
-          onSelect={(selected) => onSelectPhoto(selected)}
-          onHoverChange={onHoverPhoto}
+          onSelect={handleSelect}
           scrollVelocity={velocityRef.current}
         />
       ))}
